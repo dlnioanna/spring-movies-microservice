@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -13,9 +14,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class MovieCatalogServiceApplication {
 
 	@Bean
-	@LoadBalanced // xrhsimeyei gia to service discovery
+	@LoadBalanced // xrhsimeyei gia to service discovery kai ousiastika prosthetotnas ayto to annotation katalavainei oti den psaxnei to url alla to onoma tou service meso tou eureka
 	public RestTemplate getRestTemplate(){
-		return  new RestTemplate();
+		HttpComponentsClientHttpRequestFactory clientHttpRequestFactory = new HttpComponentsClientHttpRequestFactory();
+		clientHttpRequestFactory.setConnectTimeout(3000);
+		return new RestTemplate(clientHttpRequestFactory);
 	}
 
 	@Bean
