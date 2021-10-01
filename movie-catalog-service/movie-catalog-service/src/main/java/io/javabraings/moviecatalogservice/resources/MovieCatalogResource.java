@@ -1,5 +1,7 @@
 package io.javabraings.moviecatalogservice.resources;
 
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import io.javabraings.moviecatalogservice.models.CatalogItem;
 import io.javabraings.moviecatalogservice.models.Movie;
 import io.javabraings.moviecatalogservice.models.Rating;
@@ -31,8 +33,18 @@ public class MovieCatalogResource {
     private WebClient.Builder webClientBuilder;
 
     @RequestMapping("/{userId}")
+    @HystrixCommand(fallbackMethod = "getFallbackCatalog",
+            threadPoolKey = "movieCatalogPool",
+            threadPoolProperties = {
+            @HystrixProperty(name = "coreSize", value = "20"),
+            @HystrixProperty(name = "maxQueueSize", value = "10")},
+            commandProperties = {
+            @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value="2000"),
+            @HystrixProperty(name = "circuitBreaker.requestVolumeThreshold", value="5"), // number of requests we need to check
+            @HystrixProperty(name = "circuitBreaker.errorThresholdPercentage", value="50"),  // the percentage of requests that fail
+            @HystrixProperty(name = "circuitBreaker.sleepWindowInMilliseconds", value="5000")  //how long the circuit breaker is goint to sleep until it starts again
+    })
     public List<CatalogItem> getCatalog(@PathVariable("userId") String userId) {
-
 // ta ekana beans sthn class MovieCatalogServiceApplication
 //        WebClient.Builder builder = WebClient.builder();
 //        RestTemplate restTemplate = new RestTemplate();
@@ -64,9 +76,6 @@ public class MovieCatalogResource {
 
         }).collect(Collectors.toList());
 
-
-
-
 /**
  The singletonList() method of java.util.Collections class is used to return an
  immutable list containing only the specified object. The returned list is serializable.
@@ -74,5 +83,10 @@ public class MovieCatalogResource {
  When we try to add/remove an element on the returned singleton list, it would give UnsupportedOperationException.
  */
 //return Collections.singletonList(new CatalogItem("Transformers", "test", 4));
+    }
+
+
+    public List<CatalogItem> getFallbackCatalog(@PathVariable("userId") String userId){
+        return Arrays.asList(new CatalogItem("no movie", "",0));
     }
 }
